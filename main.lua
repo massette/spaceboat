@@ -247,7 +247,11 @@ end
 
 function love.keypressed(k)
     if game_started then
-        if k == "/" then
+        if k == "f11" then
+            local f = lw.getFullscreen()
+            lw.setFullscreen(not f)
+            love.resize(lg.getDimensions())
+        elseif k == "/" then
             terminal.open = not terminal.open
         elseif k == "tab" then
             terminal:skip()
@@ -309,12 +313,20 @@ function love.wheelmoved(sx, sy)
 end
 
 local old_canvas_x, old_canvas_y = 0, 0
-local old_mx, old_my = 0, 0
+local old_my = 0, 0
 function love.update(dt)
     if game_started then
-        if love.mouse.isDown(1) then
-            print("freija")
+        local mx, my = love.mouse.getPosition()
+
+        if terminal.open and love.mouse.isDown(1)
+        and mx / cam.canvas_scale > math.floor(trans.tween(terminal.open_timer / terminal.Duration, terminal.Width + 10, 0, trans.func.ease)) + cam.canvas_width - terminal.Width - 4
+        and mx / cam.canvas_scale < cam.canvas_width - 5 then
+            terminal.scroll = trans.clamp(
+                terminal.scroll - (my - old_my),
+                0, terminal.input_y - terminal.Padding)
         end
+
+        old_my = my
 
         if (p.just_got == "comm" or p.just_got == "power" or p.just_got == "cooling")
         and p.items["comm"] and (p.items["power"] or p.items["cooling"]) then

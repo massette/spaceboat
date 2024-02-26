@@ -1,0 +1,10 @@
+name = "spaceboat"
+default_targets = ["win64"]
+build_directory = "makelove-build"
+
+love_files = [
+    "::git-ls-tree::",
+    "-*/.*",
+]
+love_version = "11.4"
+icon_file = "assets/images/square.png"

@@ -646,7 +646,7 @@ end
 function terminal:wheelmoved(sx, sy)
     self.scroll = trans.clamp(
         self.scroll - sy * Font.Terminal:getHeight(),
-        0, self.input_y)
+        0, self.input_y - self.Padding)
 end
 
 -- Draw loop -------------------------------------------------
