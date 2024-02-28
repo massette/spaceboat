@@ -459,6 +459,10 @@ function terminal.commands:buy(caller, args)
 
     local station = World.stations[caller.connected]
     
+    if station.item == nil then
+        return "There is nothing for sale.\n"
+    end
+
     local cost = 0
     if caller.total_items == 1 then
         cost = 200

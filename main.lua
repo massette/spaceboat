@@ -1,5 +1,5 @@
 require "globals"
-lg.setDefaultFilter("nearest")
+lg.setDefaultFilter("linear")
 
 local trans = require("trans")
 
@@ -390,7 +390,17 @@ function love.update(dt)
         local sy = trans.clamp(
             math.floor((p.y + World.height / 2) / debris.sector_height) + 1,
             2, #debris[1] - 1)
-        
+
+        for i, node in ipairs(collected) do
+            if node.timer >= 1.0 then
+                table.remove(collected, i)
+
+                p.scrap = p.scrap + node.weight
+            else
+                node.timer = node.timer + dt
+            end
+        end
+    
         for i=-1,1 do
             for j = -1,1 do
                 for k, node in ipairs(debris[sx + i][sy + j]) do
@@ -398,20 +408,9 @@ function love.update(dt)
 
                     if dist <= node.type.size + 16 then
                         collected[#collected+1] = table.remove(debris[sx + i][sy + j], k)
+                        collected[#collected].timer = 0
                     end
                 end
-            end
-        end
-
-        for i, node in ipairs(collected) do
-            if node.timer == nil then
-                node.timer = 0
-            elseif node.timer >= 1.0 then
-                table.remove(collected, i)
-
-                p.scrap = p.scrap + node.weight
-            else
-                node.timer = node.timer + dt
             end
         end
 
