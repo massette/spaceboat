@@ -9,7 +9,7 @@ local player = {
     MaxVelocity = 500,
 
     image = image.LayeredImage:new({},
-        image.Sprite { "assets/images/boat_small.png", ox = 16, oy = 16 }
+        image.Sprite { "assets/images/objects/boat_small.png", ox = 16, oy = 16 }
             :addAnim("idle")
                 :addFrame(1,1)
             :addAnim("fly")
@@ -18,7 +18,7 @@ local player = {
                 :addFrame(4,1)
             :addAnim("brake")
                 :addFrame(1,1, nil, "idle"),
-        image.Sprite { "assets/images/boat_trail.png", x = -0.5, y = 7, ox = 8, oy = -1 }
+        image.Sprite { "assets/images/objects/boat_trail.png", x = -0.5, y = 7, ox = 8, oy = -1 }
             :addAnim("idle")
                 :addFrame(1,1, { visible = false })
             :addAnim("fly")

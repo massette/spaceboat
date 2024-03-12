@@ -12,8 +12,8 @@ music:setLooping(true)
 music:play()
 
 local game_started = false
-local menu_title = lg.newImage("assets/images/title.png")
-local menu_image = lg.newImage("assets/images/title_boat.png")
+local menu_title = lg.newImage("assets/images/system/title.png")
+local menu_image = lg.newImage("assets/images/system/title_boat.png")
 local menu_transition = 0
 local press_any_button = false
 
@@ -66,11 +66,11 @@ local function generate_stations(n)
         Types = {
             { -- centrifuge
                 size = 64,
-                image = lg.newImage("assets/images/ring.png")
+                image = lg.newImage("assets/images/objects/ring.png")
             },
             { -- diamond
                 size = 64,
-                image = lg.newImage("assets/images/square.png")
+                image = lg.newImage("assets/images/objects/square.png")
             }
             -- satelite?
         },
@@ -112,7 +112,7 @@ local function generate_debris(sectors, cluster_size)
     debris = {
         Types = {
             {
-                image = lg.newImage("assets/images/debris_small.png"),
+                image = lg.newImage("assets/images/objects/debris_small.png"),
                 quads = {
                     lg.newQuad( 0,0, 16,16, 48,16),
                     lg.newQuad(16,0, 16,16, 48,16),
@@ -121,7 +121,7 @@ local function generate_debris(sectors, cluster_size)
                 size = 16,
             },
             {
-                image = lg.newImage("assets/images/debris_large.png"),
+                image = lg.newImage("assets/images/objects/debris_large.png"),
                 quads = {
                     lg.newQuad( 0,0, 32,32, 128,32),
                     lg.newQuad(32,0, 32,32, 128,32),

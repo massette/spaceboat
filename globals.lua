@@ -27,7 +27,7 @@ Error = {
 }
 
 Font = {
-    Terminal = lg.newImageFont("assets/images/font.png", " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?_:;+-=\'\"()[]", 1)
+    Terminal = lg.newImageFont("assets/images/system/font.png", " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?_:;+-=\'\"()[]", 1)
 }
 
 Color = {

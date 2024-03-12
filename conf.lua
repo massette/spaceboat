@@ -1,6 +1,6 @@
 function love.conf(t)
     t.title = "Spaceboat"
-    t.window.icon = "assets/images/square.png"
+    t.window.icon = "assets/images/objects/square.png"
     t.identity = "spaceboat"
 
     t.window.minwidth = 320
