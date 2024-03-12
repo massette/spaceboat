@@ -1,6 +1,6 @@
 name = "spaceboat"
 default_targets = ["win64"]
-build_directory = "makelove-build"
+build_directory = "dist"
 
 love_files = [
     "::git-ls-tree::",

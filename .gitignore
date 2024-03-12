@@ -1,1 +1,5 @@
-makelove-build/*
+.*
+.*/*
+!/.gitignore
+
+dist/*
