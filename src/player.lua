@@ -1,5 +1,5 @@
-local trans = require("src/util/trans")
-local image = require("src/mod/image")
+local trans = require("src.util.trans")
+local image = require("src.mod.image")
 
 -- mandatory progression: cooling > power > comms
 -- optional upgrades: navigation (route)

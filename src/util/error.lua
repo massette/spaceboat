@@ -1,4 +1,4 @@
-local format = require("src/util/format")
+local format = require("src.util.format")
 
 Error = {}
 

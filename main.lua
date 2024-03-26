@@ -1,10 +1,10 @@
 require "globals"
 
-local trans = require("src/util/trans")
+local trans = require("src.util.trans")
 
-local p = require("src/player")
-local terminal = require("src/terminal")
-local cam = require("src/mod/cam"):setup(320, 180)
+local p = require("src.player")
+local terminal = require("src.terminal")
+local cam = require("src.mod.cam"):setup(320, 180)
 
 local music = love.audio.newSource("assets/music/bitspace.mp3", "stream")
 music:setLooping(true)
