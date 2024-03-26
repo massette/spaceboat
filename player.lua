@@ -8,32 +8,19 @@ local player = {
     Thrust = 100,
     MaxVelocity = 500,
 
-    image = image.LayeredImage:new({},
-        image.Sprite { "assets/images/objects/boat_small.png", ox = 16, oy = 16 }
-            :addAnim("idle")
-                :addFrame(1,1)
-            :addAnim("fly")
-                :addFrame(2,1)
-                :addFrame(3,1)
-                :addFrame(4,1)
-            :addAnim("brake")
-                :addFrame(1,1, nil, "idle"),
-        image.Sprite { "assets/images/objects/boat_trail.png", x = -0.5, y = 7, ox = 8, oy = -1 }
-            :addAnim("idle")
-                :addFrame(1,1, { visible = false })
-            :addAnim("fly")
-                :addFrame(1,1)
-                :addFrame(2,1)
-                :addFrame(3,1)
-                :addFrame(4,1)
-                :addFrame(5,1, nil, 4)
-            :addAnim("brake")
-                :addFrame(4,1)
-                :addFrame(3,1)
-                :addFrame(2,1)
-                :addFrame(1,1, nil, "idle")
-
-    ),
+    image = image.Sprite { "assets/images/objects/boat.png", ox = 16, oy = 16 }
+        :addAnim("idle")
+            :addFrame(1,1)
+        :addAnim("fly")
+            :addFrame(2,1)
+            :addFrame(3,1)
+            :addFrame(4,1)
+            :addFrame(5,1, nil, 3)
+        :addAnim("brake")
+            :addFrame(4,1)
+            :addFrame(3,1)
+            :addFrame(2,1)
+            :addFrame(1,1, nil, "idle"),
 
     scrap = 0,
     items = {},
