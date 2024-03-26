@@ -1,11 +1,11 @@
-local format = require "format"
+local format = require("src/util/format")
 
 Error = {}
 
 -- Throws an error if the argument passed is nil.
 --- @param param any
 --- @param paramName string @ (optional) Name to use in error messages.
---- @param ... string @ (optional) Types to check the param against.
+--- @param ... string | table @ (optional) Types to check the param against.
 Error.expect = function(param, paramName, ...)
     if paramName == nil then
         paramName = ""
@@ -23,7 +23,7 @@ Error.expect = function(param, paramName, ...)
 
     local types = { ... }
     for _, t in ipairs(types) do
-        if type(param) == t or (type(param) == "userdata" and param:typeOf(t)) then
+        if type(param) == t or (type(param) == "table" and param.type == t) (type(param) == "userdata" and param:typeOf(t)) then
             return
         end
     end
@@ -32,7 +32,7 @@ Error.expect = function(param, paramName, ...)
 end
 
 -- Throws an error if the argument passed is outside the given range.
---- @param param any
+--- @param param number
 --- @param a number @ lower bound
 --- @param b number @ upper bound
 --- @param typeName string? @ Name to use in error message.

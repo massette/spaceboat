@@ -1,4 +1,4 @@
-local trans = require "trans"
+local trans = require("src/util/trans")
 
 -- if i have time i want to add:
 --  up/down to move through command history

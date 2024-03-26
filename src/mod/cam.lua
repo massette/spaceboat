@@ -1,4 +1,4 @@
-local trans = require("trans")
+local trans = require("src/util/trans")
 
 local cam = {
     x = 0, y = 0,
