@@ -1,5 +1,4 @@
 require "globals"
-lg.setDefaultFilter("linear")
 
 local trans = require("trans")
 
@@ -66,11 +65,11 @@ local function generate_stations(n)
         Types = {
             { -- centrifuge
                 size = 64,
-                image = lg.newImage("assets/images/objects/ring.png")
+                image = lg.newImage("assets/images/objects/station_ring.png")
             },
             { -- diamond
                 size = 64,
-                image = lg.newImage("assets/images/objects/square.png")
+                image = lg.newImage("assets/images/objects/station_square.png")
             }
             -- satelite?
         },

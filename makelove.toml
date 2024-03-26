@@ -7,4 +7,4 @@ love_files = [
     "-*/.*",
 ]
 love_version = "11.4"
-icon_file = "assets/images/objects/square.png"
+icon_file = "assets/images/objects/station_square.png"
