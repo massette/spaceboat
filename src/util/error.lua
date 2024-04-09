@@ -14,7 +14,7 @@ Error.expect = function(param, paramName, ...)
     end
     
     if param == nil then
-        error("Expected required argument" .. paramName .. ", received nil.", 2)
+        error("Expected required argument" .. paramName .. ", received nil.", 3)
     end
     
     if #paramName ~= 0 then
@@ -23,12 +23,14 @@ Error.expect = function(param, paramName, ...)
 
     local types = { ... }
     for _, t in ipairs(types) do
-        if type(param) == t or (type(param) == "table" and param.type == t) (type(param) == "userdata" and param:typeOf(t)) then
+        if type(param) == t
+        or (type(param) == "table" and param.type == t)
+        or (type(param) == "userdata" and param:typeOf(t)) then
             return
         end
     end
 
-    error("Type mismatch" .. paramName .. ". Expected type " .. table.concat(types, "|") .. ", received " .. type(param) .. ".")
+    error("Type mismatch" .. paramName .. ". Expected type " .. table.concat(types, "|") .. ", received " .. type(param) .. ".", 3)
 end
 
 -- Throws an error if the argument passed is outside the given range.
@@ -44,6 +46,6 @@ function Error.bound(param, a, b, typeName)
     end
 
     if (param < a) or (param > b) then
-        error(typeName .. param .. " out of bounds. Expected a number between " .. a .. " and " .. b .. ".", 2)
+        error(typeName .. param .. " out of bounds. Expected a number between " .. a .. " and " .. b .. ".", 3)
     end
 end
