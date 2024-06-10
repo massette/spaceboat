@@ -1,26 +1,25 @@
 local trans = require("src.util.trans")
-local image = require("src.mod.image")
+local anim = require("src.mod.anim")
 
 -- mandatory progression: cooling > power > comms
 -- optional upgrades: navigation (route)
-
 local player = {
     Thrust = 100,
     MaxVelocity = 500,
 
-    image = image.Sprite { "assets/images/objects/boat.png", ox = 16, oy = 16 }
-        :addAnim("idle")
-            :addFrame(1,1)
-        :addAnim("fly")
-            :addFrame(2,1)
-            :addFrame(3,1)
-            :addFrame(4,1)
-            :addFrame(5,1, nil, 3)
-        :addAnim("brake")
-            :addFrame(4,1)
-            :addFrame(3,1)
-            :addFrame(2,1)
-            :addFrame(1,1, nil, "idle"),
+    image = anim.Sprite.new { "assets/images/objects/boat.png", 32 }
+        :addAnimation("idle")
+            :addFrame(1)
+        :addAnimation("fly")
+            :addFrame(2)
+            :addFrame(3)
+            :addFrame(4)
+            :addFrame(5, 4)
+        :addAnimation("brake")
+            :addFrame(4)
+            :addFrame(3)
+            :addFrame(2)
+            :addFrame(1, "idle"),
 
     scrap = 0,
     items = {},
@@ -37,7 +36,7 @@ local player = {
 }
 
 function player:reset()
-    self.image:setAnim("idle")
+    self.image:setAnimation("idle")
 
     self.scrap = 0
     self.items = {}
@@ -54,7 +53,7 @@ function player:reset()
     self.heading_to = 0
 end
 
-player.image:setAnim("idle")
+player.image:setAnimation("idle")
 
 function player:update(dt)
     -- make sure to take the shortest path
@@ -78,9 +77,6 @@ function player:update(dt)
     if self.disabled then
         self.acc = 0
         self.vel = 0
-        self.image.visible = false
-    else
-        self.image.visible = true
     end
 
     self.vel = trans.clamp(self.vel + self.acc * dt, -self.MaxVelocity * (self.acc / self.Thrust), self.MaxVelocity * (self.acc / self.Thrust))
@@ -96,7 +92,7 @@ function player:update(dt)
             self.vel = 0
         end
     end
-    
+
     self.x = self.x + vx * dt
     self.y = self.y + vy * dt
 
@@ -104,11 +100,15 @@ function player:update(dt)
 end
 
 function player:draw()
-    lg.push()
-    self.image.r = self.heading
-    lg.translate(self.x, self.y)
+    if self.disabled then
+        return
+    end
 
-    self.image:draw()
+    lg.push()
+
+    self.image.settings.r = self.heading
+    self.image:draw(self.x, self.y)
+
     lg.pop()
 end
 

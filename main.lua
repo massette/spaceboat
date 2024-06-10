@@ -2,8 +2,8 @@ require "globals"
 
 local trans = require("src.util.trans")
 
-local p = require("src.player")
-local terminal = require("src.terminal")
+local p = require("src.core.player")
+local terminal = require("src.core.terminal")
 local cam = require("src.mod.cam"):setup(320, 180)
 
 local music = love.audio.newSource("assets/music/bitspace.mp3", "stream")
@@ -312,7 +312,7 @@ function love.wheelmoved(sx, sy)
 end
 
 local old_canvas_x, old_canvas_y = 0, 0
-local old_my = 0, 0
+local old_my = 0
 function love.update(dt)
     if game_started then
         local mx, my = love.mouse.getPosition()
@@ -418,15 +418,15 @@ function love.update(dt)
         if terminal.vars["thrust"].value > 0.0 then
             p.acc = p.Thrust * terminal.vars["thrust"].value
             
-            if p.image.anim == "idle" then
-                p.image:setAnim("fly")
+            if p.image.animation == "idle" then
+                p.image:setAnimation("fly")
             end
         end
 
-        if p.image.anim == "fly" and terminal.vars["thrust"].value == 0.0 then
+        if p.image.animation == "fly" and terminal.vars["thrust"].value == 0.0 then
             p.acc = 0
 
-            p.image:setAnim("brake")
+            p.image:setAnimation("brake")
         end
 
         p:update(dt)
@@ -496,7 +496,7 @@ function cam:prepare()
         local sy = trans.clamp(
             math.floor((p.y + World.height / 2) / debris.sector_height) + 1,
             2, #debris[1] - 1)
-        
+
         for i=-1,1 do
             for j = -1,1 do
                 for k, node in ipairs(debris[sx + i][sy + j]) do
@@ -518,7 +518,7 @@ function cam:prepare()
                 label = "( " .. label .. " )"
                 lg.setColor(Color.StationDefault)
             end
-            
+
             lg.print(label, station.x - Font.Terminal:getWidth(label)/2, station.y - station.type.size/2 - Font.Terminal:getHeight() - 5)
             love.graphics.draw(station.type.image, station.x, station.y, station.r + World.stations.r, 1, 1, station.type.size/2, station.type.size/2)
         end
