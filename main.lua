@@ -4,7 +4,7 @@ local trans = require("src.util.trans")
 
 local p = require("src.core.player")
 local terminal = require("src.core.terminal")
-local cam = require("src.mod.cam"):setup(320, 180)
+local cam = require("src.mush.cam"):setup(320, 180)
 
 local music = love.audio.newSource("assets/music/bitspace.mp3", "stream")
 music:setLooping(true)

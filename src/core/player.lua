@@ -1,5 +1,5 @@
 local trans = require("src.util.trans")
-local anim = require("src.mod.anim")
+local anim = require("src.mush.anim")
 
 -- mandatory progression: cooling > power > comms
 -- optional upgrades: navigation (route)
