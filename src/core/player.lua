@@ -1,3 +1,5 @@
+local g = love.graphics
+
 local trans = require("src.util.trans")
 local anim = require("src.mush.anim")
 
@@ -104,12 +106,12 @@ function player:draw()
         return
     end
 
-    lg.push()
+    g.push()
 
     self.image.settings.r = self.heading
     self.image:draw(self.x, self.y)
 
-    lg.pop()
+    g.pop()
 end
 
 return player

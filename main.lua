@@ -1,5 +1,98 @@
-require "globals"
+local g = love.graphics
+local m = love.math
+local w = love.window
 
+g.setDefaultFilter("nearest", "nearest")
+
+--[[ DEFINE GLOBALS ]]------------------------------------------
+Color = {
+    BG              = { 0.00, 0.05, 0.20, 1.00 },
+
+    TerminalBG      = { 0.00, 0.05, 0.20, 0.70 },
+    TerminalOutline = { 1.00, 1.00, 1.00, 1.00 },
+
+    TerminalDefault = { 0.67, 0.67, 1.00, 1.00 },
+    TerminalInput   = { 1.00, 1.00, 1.00, 1.00 },
+    TerminalInfo    = { 1.0, 1.0, 1.00, 1.00 },
+    TerminalError   = { 1.00, 0.00, 0.20, 1.00 },
+
+    StationDefault  = { 0.67, 0.67, 1.00, 1.00 },
+    StationFound    = { 0.87, 0.87, 1.00, 1.00 },
+
+    Debris          = { 1.00, 1.00, 1.00, 1.00 }
+}
+
+Font = {
+    Terminal = g.newImageFont("assets/images/system/font.png", " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?_:;+-=\'\"()[]", 1)
+}
+
+Error = {
+    ReassignConstant = "Attempted to modify a read-only value.\n",
+    OutOfRange = function(a, b,c)
+        return "Out of range. Expected value between " .. b .. " and " .. c .. ", received " .. a .. ".\n"
+    end,
+    MissingArgs = function (a,b)
+        return "Expected " .. b .. " positional argument(s), received " .. a .. ".\n"
+    end,
+    TypeMismatch = function (a, b)
+        return "Type mismatch. Expected " .. b .. ", received " .. a .. ".\n"
+    end,
+    Connected = function (a)
+        return "Already connected to station " .. a .. "\n"
+    end,
+    NotConnected = function (a)
+        return "Cannot " .. a .. ". Not connected to any station.\n"
+    end,
+}
+
+World = {
+    width = 300 * 50,
+    height = 200 * 50,
+    stations = {},
+    Items = {
+        ["nav"] = "Navigation subsystem",
+        ["cooling"] = "Cooling subsystem",
+        ["power"] = "Power subsystem",
+        ["comm"] = "Communication subsystem",
+    }
+}
+
+function World.nearestStation(tx, ty)
+    local nearest, nearest_i, nearest_dist
+    for i, station in ipairs(World.stations) do
+        local dist = math.sqrt((station.x - tx)^2 + (station.y - ty)^2)
+        
+        if dist > 0.001 and  (nearest_dist == nil or dist < nearest_dist) then
+            nearest = station
+            nearest_dist = dist
+            nearest_i = i
+        end
+    end
+
+    return nearest, nearest_i, nearest_dist
+end
+
+Timer = 0
+
+function print_table(t, indent)
+    indent = indent or 0
+
+    for key, value in pairs(t) do
+        if type(value) == "table" then
+            if next(value) == nil then
+                print(string.rep("  ", indent) .. "[\"" .. tostring(key) .. "\"] = {},")
+            else
+                print(string.rep("  ", indent) .. "[\"" .. tostring(key) .. "\"] = {")
+                print_table(value, indent + 1)
+                print(string.rep("  ", indent) .. "},")
+            end
+        else
+            print(string.rep("  ", indent) .. "[\"" .. tostring(key) .. "\"] = (" .. tostring(value) .. "),")
+        end
+    end
+end
+
+--[[ DO THINGS ]]----------------------------------------------
 local trans = require("src.util.trans")
 
 local p = require("src.core.player")
@@ -11,8 +104,8 @@ music:setLooping(true)
 music:play()
 
 local game_started = false
-local menu_title = lg.newImage("assets/images/system/title.png")
-local menu_image = lg.newImage("assets/images/system/title_boat.png")
+local menu_title = g.newImage("assets/images/system/title.png")
+local menu_image = g.newImage("assets/images/system/title_boat.png")
 local menu_transition = 0
 local press_any_button = false
 
@@ -24,13 +117,13 @@ local function generate_stars(n)
     stars[2] = { ox = 0, oy = 0 }
 
     for i = 1, n do
-        local size = lm.random(#stars)
+        local size = m.random(#stars)
 
         -- separate the sizes into tables for easy paralaxing
         stars[size][#stars[size] + 1] = {
-            brightness = lm.random(10) / 10,
-            x = lm.random(cam.canvas_width),
-            y = lm.random(cam.canvas_height),
+            brightness = m.random(10) / 10,
+            x = m.random(cam.canvas_width),
+            y = m.random(cam.canvas_height),
         }
     end
 end
@@ -65,11 +158,11 @@ local function generate_stations(n)
         Types = {
             { -- centrifuge
                 size = 64,
-                image = lg.newImage("assets/images/objects/station_ring.png")
+                image = g.newImage("assets/images/objects/station_ring.png")
             },
             { -- diamond
                 size = 64,
-                image = lg.newImage("assets/images/objects/station_square.png")
+                image = g.newImage("assets/images/objects/station_square.png")
             }
             -- satelite?
         },
@@ -82,10 +175,10 @@ local function generate_stations(n)
         while safe ~= true do
             station = {
                 name = World.stations.Names[i],
-                type = World.stations.Types[lm.random(#World.stations.Types)],
-                x = lm.random(World.width) - World.width / 2,
-                y = lm.random(World.height) - World.height / 2,
-                r = lm.random(360) * math.pi / 180
+                type = World.stations.Types[m.random(#World.stations.Types)],
+                x = m.random(World.width) - World.width / 2,
+                y = m.random(World.height) - World.height / 2,
+                r = m.random(360) * math.pi / 180
             }
 
             station.info = World.stations.Info[station.name] or World.stations.Info.default
@@ -111,21 +204,21 @@ local function generate_debris(sectors, cluster_size)
     debris = {
         Types = {
             {
-                image = lg.newImage("assets/images/objects/debris_small.png"),
+                image = g.newImage("assets/images/objects/debris_small.png"),
                 quads = {
-                    lg.newQuad( 0,0, 16,16, 48,16),
-                    lg.newQuad(16,0, 16,16, 48,16),
-                    lg.newQuad(32,0, 16,16, 48,16),
+                    g.newQuad( 0,0, 16,16, 48,16),
+                    g.newQuad(16,0, 16,16, 48,16),
+                    g.newQuad(32,0, 16,16, 48,16),
                 },
                 size = 16,
             },
             {
-                image = lg.newImage("assets/images/objects/debris_large.png"),
+                image = g.newImage("assets/images/objects/debris_large.png"),
                 quads = {
-                    lg.newQuad( 0,0, 32,32, 128,32),
-                    lg.newQuad(32,0, 32,32, 128,32),
-                    lg.newQuad(64,0, 32,32, 128,32),
-                    lg.newQuad(96,0, 32,32, 128,32),
+                    g.newQuad( 0,0, 32,32, 128,32),
+                    g.newQuad(32,0, 32,32, 128,32),
+                    g.newQuad(64,0, 32,32, 128,32),
+                    g.newQuad(96,0, 32,32, 128,32),
                 },
                 size = 32,
             }
@@ -140,20 +233,20 @@ local function generate_debris(sectors, cluster_size)
         for sy = 1, sectors do
             debris[sx][sy] = {}
 
-            for _ = 1, lm.random(2,5) do
-                local cx = (sx - 1) * debris.sector_width + 64 + lm.random(debris.sector_width - 128) - (World.width + cam.canvas_width) / 2
-                local cy = (sy - 1) * debris.sector_height + 64 + lm.random(debris.sector_height - 128) - (World.height + cam.canvas_height) / 2
+            for _ = 1, m.random(2,5) do
+                local cx = (sx - 1) * debris.sector_width + 64 + m.random(debris.sector_width - 128) - (World.width + cam.canvas_width) / 2
+                local cy = (sy - 1) * debris.sector_height + 64 + m.random(debris.sector_height - 128) - (World.height + cam.canvas_height) / 2
 
                 for _ = 1, cluster_size do
-                    local ox = lm.random(8) * 8
-                    local oy = lm.random(8) * 8
+                    local ox = m.random(8) * 8
+                    local oy = m.random(8) * 8
 
-                    local weight = lm.random(5) * 10
+                    local weight = m.random(5) * 10
 
                     local node = {
                         x = cx + ox,
                         y = cy + oy,
-                        r = lm.random(360) * math.pi / 180,
+                        r = m.random(360) * math.pi / 180,
                         weight = weight * trans.tween(1 - 2 * math.abs(cx + ox) / World.width, 1, 2.5, trans.func.ease_out),
                     }
 
@@ -163,12 +256,12 @@ local function generate_debris(sectors, cluster_size)
                         node.type = debris.Types[1]
                     end
         
-                    local r = lm.random(100)
+                    local r = m.random(100)
         
                     if r == 100 then
                         node.quad = node.type.quads[#node.type.quads]
                     else
-                        node.quad = node.type.quads[lm.random(#node.type.quads - 1)]
+                        node.quad = node.type.quads[m.random(#node.type.quads - 1)]
                     end
             
                     table.insert(debris[sx][sy], node)
@@ -247,9 +340,9 @@ end
 function love.keypressed(k)
     if game_started then
         if k == "f11" then
-            local f = lw.getFullscreen()
-            lw.setFullscreen(not f)
-            love.resize(lg.getDimensions())
+            local f = w.getFullscreen()
+            w.setFullscreen(not f)
+            love.resize(g.getDimensions())
         elseif k == "/" then
             terminal.open = not terminal.open
         elseif k == "tab" then
@@ -471,18 +564,18 @@ end
 function cam:prepareStatic()
     for size, layer in ipairs(stars) do
         for _, star in ipairs(layer) do
-            lg.setColor(1,1,0.5*star.brightness + 0.5, star.brightness)
-            lg.circle("fill", math.floor(star.x + layer.ox) % (cam.canvas_width), math.floor(star.y + layer.oy) % (cam.canvas_height), size)
+            g.setColor(1,1,0.5*star.brightness + 0.5, star.brightness)
+            g.circle("fill", math.floor(star.x + layer.ox) % (cam.canvas_width), math.floor(star.y + layer.oy) % (cam.canvas_height), size)
         end
     end
 
     if not game_started then
-        lg.setColor(1,1,1, 1)
-        lg.draw(menu_image, (cam.canvas_height - 200) / 2, 8 * math.sin(Timer) + 8)
-        lg.draw(menu_title, (cam.canvas_width - 300) / 2)
+        g.setColor(1,1,1, 1)
+        g.draw(menu_image, (cam.canvas_height - 200) / 2, 8 * math.sin(Timer) + 8)
+        g.draw(menu_title, (cam.canvas_width - 300) / 2)
 
-        lg.setFont(Font.Terminal)
-         lg.print("[Press any key to continue]", cam.canvas_width - Font.Terminal:getWidth("[Press any key to continue]") - 5, cam.canvas_height - Font.Terminal:getHeight() - 5)
+        g.setFont(Font.Terminal)
+         g.print("[Press any key to continue]", cam.canvas_width - Font.Terminal:getWidth("[Press any key to continue]") - 5, cam.canvas_height - Font.Terminal:getHeight() - 5)
     end
 end
 
@@ -500,8 +593,8 @@ function cam:prepare()
         for i=-1,1 do
             for j = -1,1 do
                 for k, node in ipairs(debris[sx + i][sy + j]) do
-                    lg.setColor(Color.Debris)
-                    lg.draw(node.type.image, node.quad, node.x, node.y, node.r, 1, 1, node.type.size/2, node.type.size/2)
+                    g.setColor(Color.Debris)
+                    g.draw(node.type.image, node.quad, node.x, node.y, node.r, 1, 1, node.type.size/2, node.type.size/2)
                 end
             end
         end
@@ -509,17 +602,17 @@ function cam:prepare()
         for i, station in ipairs(World.stations) do
             local label = "Station " .. i
             if p.discovered[i] then
-                lg.setColor(Color.StationFound)
+                g.setColor(Color.StationFound)
 
                 if station.name then
                     label = label .. " '" .. station.name .. "'"
                 end
             else
                 label = "( " .. label .. " )"
-                lg.setColor(Color.StationDefault)
+                g.setColor(Color.StationDefault)
             end
 
-            lg.print(label, station.x - Font.Terminal:getWidth(label)/2, station.y - station.type.size/2 - Font.Terminal:getHeight() - 5)
+            g.print(label, station.x - Font.Terminal:getWidth(label)/2, station.y - station.type.size/2 - Font.Terminal:getHeight() - 5)
             love.graphics.draw(station.type.image, station.x, station.y, station.r + World.stations.r, 1, 1, station.type.size/2, station.type.size/2)
         end
 
@@ -528,8 +621,8 @@ function cam:prepare()
             local dist = math.sqrt((p.x - node.x)^2 + (p.y - node.y)^2) * trans.tween(node.timer, 1.0, 0.0, trans.func.ease)
             local s = trans.tween(node.timer / 1.0, 1.0, 0.25, trans.func.ease_out)
 
-            lg.setColor(Color.Debris)
-            lg.draw(node.type.image, node.quad, p.x + dist * math.cos(r), p.y + dist * math.sin(r), node.r, s, s, node.type.size/2, node.type.size/2)
+            g.setColor(Color.Debris)
+            g.draw(node.type.image, node.quad, p.x + dist * math.cos(r), p.y + dist * math.sin(r), node.r, s, s, node.type.size/2, node.type.size/2)
         end
 
         p:draw()
@@ -547,6 +640,6 @@ end
 function love.draw()
     cam:draw()
 
-    lg.setColor(Color.BG[1], Color.BG[2], Color.BG[3], menu_transition)
-    lg.rectangle("fill", 0, 0, cam.window.width, cam.window.height)
+    g.setColor(Color.BG[1], Color.BG[2], Color.BG[3], menu_transition)
+    g.rectangle("fill", 0, 0, cam.window.width, cam.window.height)
 end

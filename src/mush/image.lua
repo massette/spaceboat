@@ -1,3 +1,5 @@
+local g = love.graphics
+
 -- Animation --------------------------------------------
 local Anim = {}
 
@@ -28,7 +30,7 @@ function Anim:addFrame(x, y, state, next_state, delay)
     assert(x ~= nil, "Expected required argument 'y', received nil.")
 
     state = state or {}
-    state.quad = lg.newQuad((x - 1) * self.image.sprite_width, (y - 1) * self.image.sprite_height, self.image.sprite_width, self.image.sprite_height, self.image.width, self.image.height)
+    state.quad = g.newQuad((x - 1) * self.image.sprite_width, (y - 1) * self.image.sprite_height, self.image.sprite_width, self.image.sprite_height, self.image.width, self.image.height)
 
     next_state = next_state or {}
     if type(next_state) == "number" then
@@ -76,7 +78,7 @@ function Sprite:new(options)
     options.filename = options[1] or options.filename
     assert(options.filename ~= nil, "Expected required argument 'filename', received nil.")
 
-    options.image = options.image or lg.newImage(options.filename)
+    options.image = options.image or g.newImage(options.filename)
     options.color = options.color or { 1, 1, 1, 1 }
     options.quad = options.quad or nil
     options.visible = options.visible or true
@@ -155,9 +157,9 @@ function Sprite:draw()
 
     love.graphics.setColor(im.color)
     if im.quad == nil then
-        lg.draw(self.image, im.x, im.y, im.r, im.sx, im.sy, im.ox, im.oy)
+        g.draw(self.image, im.x, im.y, im.r, im.sx, im.sy, im.ox, im.oy)
     else
-        lg.draw(self.image, im.quad, im.x, im.y, im.r, im.sx, im.sy, im.ox, im.oy)
+        g.draw(self.image, im.quad, im.x, im.y, im.r, im.sx, im.sy, im.ox, im.oy)
     end
 end
 
@@ -203,16 +205,16 @@ function LayeredImage:draw()
         return
     end
 
-    lg.push()
-    lg.rotate(self.r)
-    lg.translate(self.x, self.y)
-    lg.scale(self.sx, self.sy)
+    g.push()
+    g.rotate(self.r)
+    g.translate(self.x, self.y)
+    g.scale(self.sx, self.sy)
 
     for _, image in ipairs(self.images) do
         image:draw()
     end
 
-    lg.pop()
+    g.pop()
 
     self.anim = self.images[1].anim
 end

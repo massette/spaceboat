@@ -1,3 +1,7 @@
+local g = love.graphics
+local a = love.audio
+local m = love.math
+
 local trans = require("src.util.trans")
 
 -- if i have time i want to add:
@@ -188,8 +192,8 @@ function terminal:reset()
     self.type_timer = 0.0
 end
 
-local bloop = la.newSource("assets/sounds/bloop.wav", "static")
-local ping = la.newSource("assets/sounds/ping.wav", "static")
+local bloop = a.newSource("assets/sounds/bloop.wav", "static")
+local ping = a.newSource("assets/sounds/ping.wav", "static")
 
 -- Argument parsing stuff -------------------------------------
 function terminal:type_eval(str)
@@ -419,7 +423,7 @@ caller.discovered[args[1].value] = true
         if caller.total_discoveries == 1 then
             return "Connected!\nNew functions available.\nThere is nothing to repair the ship with here, but their radar is much more powerful than yours.\nTry using 'ping' to find your next destination before leaving.\n"
         elseif caller.total_discoveries == 2 or caller.total_discoveries == 4 or caller.total_discoveries == 6 or caller.total_discoveries == 7 then
-            World.stations[args[1].value].item = table.remove(self.systems_remaining, lm.random(#self.systems_remaining))
+            World.stations[args[1].value].item = table.remove(self.systems_remaining, m.random(#self.systems_remaining))
     
             return "Connected!\nNew functions available.\nNew item available for purchase!\nUse 'info' to find out more, and 'buy' to make a purchase.\n"
         end
@@ -693,40 +697,40 @@ function terminal:update(dt)
 end
 
 function terminal:draw(window_width, window_height)
-    lg.push()
-    lg.translate(
+    g.push()
+    g.translate(
         math.floor(trans.tween(self.open_timer / self.Duration, self.Width + 10, 0, trans.func.ease)),
         0
     )
 
-    lg.setColor(Color.TerminalBG)
-    lg.rectangle("fill", window_width - self.Width - 5, 5, self.Width, window_height - 10)
+    g.setColor(Color.TerminalBG)
+    g.rectangle("fill", window_width - self.Width - 5, 5, self.Width, window_height - 10)
 
-    lg.setColor(Color.TerminalOutline)
-    lg.setLineWidth(2)
-    lg.rectangle("line", window_width - self.Width - 5, 5, self.Width, window_height - 10)
+    g.setColor(Color.TerminalOutline)
+    g.setLineWidth(2)
+    g.rectangle("line", window_width - self.Width - 5, 5, self.Width, window_height - 10)
 
-    lg.setScissor(window_width - self.Width - 4 + trans.tween(self.open_timer / self.Duration, self.Width + 10, 0, trans.func.ease), 6, self.Width - 2, window_height - 12)
-    lg.translate(window_width - self.Width + self.Padding - 4, 6 + self.Padding - self.scroll)
+    g.setScissor(window_width - self.Width - 4 + trans.tween(self.open_timer / self.Duration, self.Width + 10, 0, trans.func.ease), 6, self.Width - 2, window_height - 12)
+    g.translate(window_width - self.Width + self.Padding - 4, 6 + self.Padding - self.scroll)
 
-    lg.setFont(Font.Terminal)
+    g.setFont(Font.Terminal)
     local y = 0
     for _, line in ipairs(self.text) do
         if type(line) == "table" then
-            lg.setColor(line)
+            g.setColor(line)
         else
-            lg.printf(line, 0,y, self.Width - self.Padding*3)
+            g.printf(line, 0,y, self.Width - self.Padding*3)
 
             local lines = select(2, Font.Terminal:getWrap(line, self.Width - self.Padding*3))
             y = y + #lines * Font.Terminal:getHeight()
         end
     end
 
-    lg.setColor(Color.TerminalInput)
+    g.setColor(Color.TerminalInput)
     if 4 * (Timer % 1) < 3 and #self.text >= 26 then
-        lg.printf(self.input:sub(1, self.cursor_pos) .. "_" .. self.input:sub(self.cursor_pos + 1, #self.input), 0,y, self.Width - self.Padding*3)
+        g.printf(self.input:sub(1, self.cursor_pos) .. "_" .. self.input:sub(self.cursor_pos + 1, #self.input), 0,y, self.Width - self.Padding*3)
     else
-        lg.printf(self.input:sub(1, self.cursor_pos) .. " " .. self.input:sub(self.cursor_pos + 1, #self.input), 0,y, self.Width - self.Padding*3)
+        g.printf(self.input:sub(1, self.cursor_pos) .. " " .. self.input:sub(self.cursor_pos + 1, #self.input), 0,y, self.Width - self.Padding*3)
     end
     local old_input_y = self.input_y
     self.input_y = y + Font.Terminal:getHeight()
@@ -734,8 +738,8 @@ function terminal:draw(window_width, window_height)
     if old_input_y ~= self.input_y then
         self:focus()
     end
-    lg.setScissor()
-    lg.pop()
+    g.setScissor()
+    g.pop()
 end
 
 return terminal

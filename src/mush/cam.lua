@@ -1,3 +1,6 @@
+local g = love.graphics
+local w = love.window
+
 local trans = require("src.util.trans")
 
 local cam = {
@@ -35,9 +38,9 @@ function cam:setup(src_width, src_height)
 
     self.window.flags.minwidth = src_width
     self.window.flags.minheight = src_height
-    self.window.width, self.window.height = lg.getDimensions()
+    self.window.width, self.window.height = g.getDimensions()
 
-    lw.setMode(self.window.width, self.window.height, self.window.flags)
+    w.setMode(self.window.width, self.window.height, self.window.flags)
     self:fit(self.window.width, self.window.height)
 
     return self
@@ -53,7 +56,7 @@ function cam:fit(width, height)
         height / self.src_height
     )
 
-    self.canvas = lg.newCanvas(math.ceil(width / self.canvas_scale), math.ceil(height / self.canvas_scale))
+    self.canvas = g.newCanvas(math.ceil(width / self.canvas_scale), math.ceil(height / self.canvas_scale))
     self.canvas_width, self.canvas_height = self.canvas:getDimensions()
 
     return self
@@ -81,28 +84,28 @@ function cam:prepareStatic() end
 function cam:prepareUI() end
 
 function cam:draw(x, y)
-    lg.setCanvas(self.canvas)
-    lg.clear(Color.BG)
+    g.setCanvas(self.canvas)
+    g.clear(Color.BG)
 
     self:prepareStatic()
 
     -- rotate and scale about the point (x, y) as the origin
-    lg.push()
-    lg.translate(-self.x - self.ox, -self.y - self.oy)
-    lg.scale(self.scale)
-    lg.rotate(self.r)
+    g.push()
+    g.translate(-self.x - self.ox, -self.y - self.oy)
+    g.scale(self.scale)
+    g.rotate(self.r)
 
     -- center the view on (x, y)
-    lg.translate(self.canvas_width/2, self.canvas_height/2)
+    g.translate(self.canvas_width/2, self.canvas_height/2)
 
     self:prepare()
-    lg.pop()
+    g.pop()
 
     self:prepareUI()
-    lg.setCanvas()
+    g.setCanvas()
 
-    lg.setColor(1, 1, 1, 1)
-    lg.draw(cam.canvas, x or 0, y or 0, 0, self.canvas_scale)
+    g.setColor(1, 1, 1, 1)
+    g.draw(cam.canvas, x or 0, y or 0, 0, self.canvas_scale)
 end
 
 -- Export ----------------------------------------------
