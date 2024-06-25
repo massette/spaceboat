@@ -74,24 +74,6 @@ end
 
 Timer = 0
 
-function print_table(t, indent)
-    indent = indent or 0
-
-    for key, value in pairs(t) do
-        if type(value) == "table" then
-            if next(value) == nil then
-                print(string.rep("  ", indent) .. "[\"" .. tostring(key) .. "\"] = {},")
-            else
-                print(string.rep("  ", indent) .. "[\"" .. tostring(key) .. "\"] = {")
-                print_table(value, indent + 1)
-                print(string.rep("  ", indent) .. "},")
-            end
-        else
-            print(string.rep("  ", indent) .. "[\"" .. tostring(key) .. "\"] = (" .. tostring(value) .. "),")
-        end
-    end
-end
-
 --[[ DO THINGS ]]----------------------------------------------
 local trans = require("src.util.trans")
 
