@@ -1,112 +1,141 @@
 local g = love.graphics
-local w = love.window
 
-local trans = require("src.util.trans")
-
-local cam = {
-    x = 0, y = 0,
-    r = 0,
-    scale = 1.0,
-    ox = 0, oy = 0,
-
-    inner_width = 0,
-    inner_height = 0,
-    
+--- @class camera
+--- @field canvas love.Canvas?
+--- @field width number
+--- @field height number
+--- @field scale number
+--- @field x number
+--- @field y number
+--- @field angle number
+--- @field zoom number
+local camera = {
     canvas = nil,
-    canvas_width = 0,
-    canvas_height = 0,
-    canvas_scale = 1.0,
+    width = 0, height = 0,
+    scale = 1,
 
-    window = {
-        width = 0, height = 0,
-        flags = {
-            fullscreen = false,
-            fullscreentype = "desktop",
-            resizable = true,
-
-            minwidth = 0,
-            minheight = 0,
-        }
-    },
-
-    timer = nil,
+    x = 0, y = 0,
+    angle = 0,
+    zoom = 1,
 }
 
-function cam:setup(src_width, src_height)
-    self.src_width = src_width
-    self.src_height = src_height
+local minw, minh = 0, 0
 
-    self.window.flags.minwidth = src_width
-    self.window.flags.minheight = src_height
-    self.window.width, self.window.height = g.getDimensions()
+--[[ Setup Functions ]]----------------------------------------
+--- Initialize camera canvas.
+--- Can be chained.
+--- @param width number
+--- @param height number
+function camera:setup(width, height)
+    minw, minh = width, height
 
-    w.setMode(self.window.width, self.window.height, self.window.flags)
-    self:fit(self.window.width, self.window.height)
+    self.canvas = g.newCanvas(width, height)
+    self.width, self.height = width, height
 
     return self
 end
 
--- Scales the canvas to fit within the given dimension.
-function cam:fit(width, height)
-    self.window.width = width
-    self.window.height = height
-
-    self.canvas_scale = math.min(
-        width / self.src_width,
-        height / self.src_height
+--- Resize camera canvas to fit within the given dimensions.
+--- Can be chained.
+--- @param width number
+--- @param height number
+--- @param keep_ratio boolean?
+--- @param keep_int boolean?
+function camera:resize(width, height, keep_ratio, keep_int)
+    self.scale = math.min(
+        width / minw,
+        height / minh
     )
 
-    self.canvas = g.newCanvas(math.ceil(width / self.canvas_scale), math.ceil(height / self.canvas_scale))
-    self.canvas_width, self.canvas_height = self.canvas:getDimensions()
+    if not keep_ratio then
+        self.width = math.ceil(width / self.scale)
+        self.height = math.ceil(height / self.scale)
+
+        self.canvas = g.newCanvas(self.width, self.height)
+    end
+
+    if keep_int then
+        self.scale = math.floor(self.scale)
+    end
 
     return self
 end
 
-function cam:follow(x, y, max, min)
-    local dir = math.atan2(y - self.y, x - self.x)
-    local mag = math.sqrt((y - self.y)^2 + (x - self.x)^2)
+--[[ Transform Functions ]]-------------------------------------
+--- Apply camera transforms.
+--- @param no_pos boolean?
+--- @param no_zoom boolean?
+--- @param no_center boolean?
+function camera:transform(no_pos, no_zoom, no_center)
+    if not no_center then
+        g.translate(self.width / 2, self.height / 2)
+    end
 
-    if max ~= nil and mag - max > 0.001 then
-        self.x = x - max * math.cos(dir)
-        self.y = y - max * math.sin(dir)
-    elseif min == nil or mag - min > 0.001 then
-        self.x = self.x + mag * math.cos(dir) * 0.03
-        self.y = self.y + mag * math.sin(dir) * 0.03
-    else
-        self.x = x
-        self.y = y
+    if not no_zoom then
+        g.scale(self.zoom)
+    end
+
+    -- TODO: add rotation
+
+    if not no_pos then
+        g.translate(-self.x, -self.y)
     end
 end
 
--- Drawing ---------------------------------------------
-function cam:prepare() end
-function cam:prepareStatic() end
-function cam:prepareUI() end
+--- Center the camera on a canvas coordinate.
+--- @param x number
+--- @param y number
+--- @param w number?
+--- @param h number?
+function camera:follow(x, y, w, h)
+    local cutoff, strength = 0.1, 0.07
+    
+    w = w or math.min(self.width, self.height) / 2
+    h = h or w
 
-function cam:draw(x, y)
-    g.setCanvas(self.canvas)
-    g.clear(Color.BG)
+    local dx = x - self.x
+    local dy = y - self.y
 
-    self:prepareStatic()
+    if math.abs(dx) < cutoff then
+        self.x = x
+    elseif dx >  w / 2 then
+        self.x = x - w / 2
+    elseif dx < -w / 2 then
+        self.x = x + w / 2
+    end
 
-    -- rotate and scale about the point (x, y) as the origin
-    g.push()
-    g.translate(-self.x - self.ox, -self.y - self.oy)
-    g.scale(self.scale)
-    g.rotate(self.r)
+    if math.abs(dy) < cutoff then
+        self.y = y
+    elseif dy >  h / 2 then
+        self.y = y - h / 2
+    elseif dy < -h / 2 then
+        self.y = y + h / 2
+    end
 
-    -- center the view on (x, y)
-    g.translate(self.canvas_width/2, self.canvas_height/2)
-
-    self:prepare()
-    g.pop()
-
-    self:prepareUI()
-    g.setCanvas()
-
-    g.setColor(1, 1, 1, 1)
-    g.draw(cam.canvas, x or 0, y or 0, 0, self.canvas_scale)
+    self.x = self.x + (x - self.x) * strength
+    self.y = self.y + (y - self.y) * strength
 end
 
--- Export ----------------------------------------------
-return cam
+--[[ Draw Functions ]]-----------------------------------------
+--- Start drawing to camera canvas.
+function camera:set()
+    g.setCanvas(self.canvas)
+    g.setColor(1,1,0)
+    g.circle("fill", 0,0, 3)
+end
+
+--- Stop drawing to camera canvas.
+function camera:unset()
+    g.setCanvas()
+end
+
+--- Draw the camera canvas.
+--- @param x number?
+--- @param y number?
+function camera:draw(x, y)
+    g.setColor(1, 1, 1, 1)
+    g.draw(self.canvas, x, y, 0, self.scale)
+end
+
+--[[ Export ]]-------------------------------------------------
+return camera

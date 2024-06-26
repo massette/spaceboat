@@ -79,7 +79,7 @@ local trans = require("src.util.trans")
 
 local p = require("src.core.player")
 local terminal = require("src.core.terminal")
-local cam = require("src.mush.cam"):setup(320, 180)
+local cam = require("src.mush.camera"):setup(320, 180)
 
 local music = love.audio.newSource("assets/music/bitspace.mp3", "stream")
 music:setLooping(true)
@@ -104,8 +104,8 @@ local function generate_stars(n)
         -- separate the sizes into tables for easy paralaxing
         stars[size][#stars[size] + 1] = {
             brightness = m.random(10) / 10,
-            x = m.random(cam.canvas_width),
-            y = m.random(cam.canvas_height),
+            x = m.random(cam.width),
+            y = m.random(cam.height),
         }
     end
 end
@@ -216,8 +216,8 @@ local function generate_debris(sectors, cluster_size)
             debris[sx][sy] = {}
 
             for _ = 1, m.random(2,5) do
-                local cx = (sx - 1) * debris.sector_width + 64 + m.random(debris.sector_width - 128) - (World.width + cam.canvas_width) / 2
-                local cy = (sy - 1) * debris.sector_height + 64 + m.random(debris.sector_height - 128) - (World.height + cam.canvas_height) / 2
+                local cx = (sx - 1) * debris.sector_width + 64 + m.random(debris.sector_width - 128) - (World.width + cam.width) / 2
+                local cy = (sy - 1) * debris.sector_height + 64 + m.random(debris.sector_height - 128) - (World.height + cam.height) / 2
 
                 for _ = 1, cluster_size do
                     local ox = m.random(8) * 8
@@ -309,7 +309,7 @@ Copyright (C) Optera Inc.]],
 end
 
 function love.resize(w, h)
-    cam:fit(w, h)
+    cam:resize(w, h)
     generate_stars(80)
 end
 
@@ -393,8 +393,8 @@ function love.update(dt)
         local mx, my = love.mouse.getPosition()
 
         if terminal.open and love.mouse.isDown(1)
-        and mx / cam.canvas_scale > math.floor(trans.tween(terminal.open_timer / terminal.Duration, terminal.Width + 10, 0, trans.func.ease)) + cam.canvas_width - terminal.Width - 4
-        and mx / cam.canvas_scale < cam.canvas_width - 5 then
+        and mx / cam.scale > math.floor(trans.tween(terminal.open_timer / terminal.Duration, terminal.Width + 10, 0, trans.func.ease)) + cam.width - terminal.Width - 4
+        and mx / cam.scale < cam.width - 5 then
             terminal.scroll = trans.clamp(
                 terminal.scroll - (my - old_my),
                 0, terminal.input_y - terminal.Padding)
@@ -506,22 +506,22 @@ function love.update(dt)
 
         p:update(dt)
 
-        p.x = trans.clamp(p.x, -(World.width + cam.canvas_width) / 2, (World.width + cam.canvas_width) / 2)
-        p.y = trans.clamp(p.y, -(World.height + cam.canvas_height) / 2, (World.height + cam.canvas_height) / 2)
+        p.x = trans.clamp(p.x, -(World.width + cam.width) / 2, (World.width + cam.width) / 2)
+        p.y = trans.clamp(p.y, -(World.height + cam.height) / 2, (World.height + cam.height) / 2)
 
-        local dx = old_canvas_x - (cam.x + cam.ox) - 0.05 * math.sin(p.heading)
-        local dy = old_canvas_y - (cam.y + cam.oy) + 0.05 * math.cos(p.heading)
+        local dx = old_canvas_x - (cam.x + cam.width / 2) - 0.05 * math.sin(p.heading)
+        local dy = old_canvas_y - (cam.y + cam.height / 2) + 0.05 * math.cos(p.heading)
 
-        old_canvas_x = cam.x + cam.ox
-        old_canvas_y = cam.y + cam.oy
+        old_canvas_x = cam.x + cam.width / 2
+        old_canvas_y = cam.y + cam.height / 2
 
         for size, layer in ipairs(stars) do
-            layer.ox = (layer.ox + dx / (3 - size / #stars)) % cam.canvas_width
-            layer.oy = (layer.oy + dy / (3 - size / #stars)) % cam.canvas_height
+            layer.ox = (layer.ox + dx / (3 - size / #stars)) % cam.width
+            layer.oy = (layer.oy + dy / (3 - size / #stars)) % cam.height
         end
 
         local follow_dist = trans.tween(terminal.open_timer / terminal.Duration, 50, 20, trans.func.ease)
-        cam:follow(p.x, p.y, follow_dist, 1)
+        cam:follow(p.x, p.y, follow_dist)
 
         cam.ox = trans.tween(terminal.open_timer / terminal.Duration, 0, (terminal.Width + 10) / 2, trans.func.ease)
         
@@ -530,8 +530,8 @@ function love.update(dt)
         game_started = true
     else
         for size, layer in ipairs(stars) do
-            layer.ox = (layer.ox - 2 / (3 - size / #stars)) % cam.canvas_width
-            layer.oy = (layer.oy + 1 / (3 - size / #stars)) % cam.canvas_height
+            layer.ox = (layer.ox - 2 / (3 - size / #stars)) % cam.width
+            layer.oy = (layer.oy + 1 / (3 - size / #stars)) % cam.height
         end
 
         if press_any_button then
@@ -542,27 +542,23 @@ function love.update(dt)
     Timer = Timer + dt
 end
 
----@diagnostic disable-next-line: duplicate-set-field
-function cam:prepareStatic()
+g.setBackgroundColor(Color.BG)
+function love.draw()
+    cam:set()
+    g.clear(Color.BG)
+
+    -- draw stars
     for size, layer in ipairs(stars) do
         for _, star in ipairs(layer) do
             g.setColor(1,1,0.5*star.brightness + 0.5, star.brightness)
-            g.circle("fill", math.floor(star.x + layer.ox) % (cam.canvas_width), math.floor(star.y + layer.oy) % (cam.canvas_height), size)
+            g.circle("fill", math.floor(star.x + layer.ox) % (cam.width), math.floor(star.y + layer.oy) % (cam.height), size)
         end
     end
 
-    if not game_started then
-        g.setColor(1,1,1, 1)
-        g.draw(menu_image, (cam.canvas_height - 200) / 2, 8 * math.sin(Timer) + 8)
-        g.draw(menu_title, (cam.canvas_width - 300) / 2)
+    g.push()
+    cam:transform()
 
-        g.setFont(Font.Terminal)
-         g.print("[Press any key to continue]", cam.canvas_width - Font.Terminal:getWidth("[Press any key to continue]") - 5, cam.canvas_height - Font.Terminal:getHeight() - 5)
-    end
-end
-
----@diagnostic disable-next-line: duplicate-set-field
-function cam:prepare()
+    -- draw game
     if game_started then
         local sx = trans.clamp(
             math.floor((p.x + World.width / 2) / debris.sector_width) + 1,
@@ -609,19 +605,29 @@ function cam:prepare()
 
         p:draw()
     end
-end
 
----@diagnostic disable-next-line: duplicate-set-field
-function cam:prepareUI()
+    g.pop()
+
+    -- draw terminal
     if game_started then
-        terminal:draw(cam.canvas_width, cam.canvas_height)
+        terminal:draw(cam.width, cam.height)
+    -- draw title stuff
     else
-    end
-end
+        g.setColor(1,1,1, 1)
+        g.draw(menu_image, (cam.height - 200) / 2, 8 * math.sin(Timer) + 8)
+        g.draw(menu_title, (cam.width - 300) / 2)
 
-function love.draw()
-    cam:draw()
+        g.setFont(Font.Terminal)
+        g.print("[Press any key to continue]", cam.width - Font.Terminal:getWidth("[Press any key to continue]") - 5, cam.height - Font.Terminal:getHeight() - 5)
+    end
+
+    cam:unset()
+
+    local w, h = g.getDimensions()
+    cam:draw((w - cam.width * cam.scale) / 2, (h - cam.height * cam.scale) / 2)
 
     g.setColor(Color.BG[1], Color.BG[2], Color.BG[3], menu_transition)
-    g.rectangle("fill", 0, 0, cam.window.width, cam.window.height)
+    g.rectangle("fill", 0, 0, cam.width * cam.scale, cam.height * cam.scale)
 end
+
+love.resize(g.getDimensions())
