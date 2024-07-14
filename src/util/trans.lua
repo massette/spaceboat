@@ -7,8 +7,12 @@ local trans = {}
 --- @return number
 --- @param value number
 --- @param a number
---- @param b number
+--- @param b number?
 function trans.clamp(value, a,b)
+    if b == nil then
+        return math.min(math.max(value, -a), a)
+    end
+
     return math.min(math.max(value, a), b)
 end
 
