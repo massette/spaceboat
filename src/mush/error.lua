@@ -1,12 +1,12 @@
 local format = require("src.util.format")
 
-Error = {}
+local err = {}
 
 -- Throws an error if the argument passed is nil.
 --- @param param any
 --- @param paramName string @ (optional) Name to use in error messages.
 --- @param ... string | table @ (optional) Types to check the param against.
-Error.expect = function(param, paramName, ...)
+err.expect = function(param, paramName, ...)
     if paramName == nil then
         paramName = ""
     else
@@ -38,7 +38,7 @@ end
 --- @param a number @ lower bound
 --- @param b number @ upper bound
 --- @param typeName string? @ Name to use in error message.
-function Error.bound(param, a, b, typeName)
+function err.bound(param, a, b, typeName)
     if typeName == nil then
         typeName = ""
     else
@@ -49,3 +49,5 @@ function Error.bound(param, a, b, typeName)
         error(typeName .. param .. " out of bounds. Expected a number between " .. a .. " and " .. b .. ".", 3)
     end
 end
+
+return err

@@ -1,5 +1,5 @@
 
-require "src.util.error"
+local err = require "src.mush.error"
 
 local g = love.graphics
 
@@ -42,7 +42,7 @@ local Sprite = { type = "Sprite" }
 --- @return Animation
 function Animation.new(options)
     options.sprite = options[1] or options.sprite
-    Error.expect(options.sprite, "sprite", "Sprite")
+    err.expect(options.sprite, "sprite", "Sprite")
 
     options.defaultDelay = options[2] or options.defaultDelay or 0.1
 
@@ -67,7 +67,7 @@ end
 --- @param delay? number
 --- @param data? table
 function Animation:add(frame, next_frame, delay, data)
-    Error.expect(frame, "frame", "number")
+    err.expect(frame, "frame", "number")
     self.next[self.frame] = frame
     self.next[frame] = next_frame or nil
 
@@ -129,12 +129,12 @@ function Sprite.new(options)
     options[3] = nil
 
     if options.image == nil then
-        Error.expect(options.filename, "filename", "string")
+        err.expect(options.filename, "filename", "string")
         options.image = g.newImage(options.filename)
     end
 
-    Error.expect(options.spriteWidth, "spriteWidth", "number")
-    Error.expect(options.spriteHeight, "spriteHeight", "number")
+    err.expect(options.spriteWidth, "spriteWidth", "number")
+    err.expect(options.spriteHeight, "spriteHeight", "number")
 
     options.sheetWidth, options.sheetHeight = options.image:getDimensions()
     assert(options.sheetWidth % options.spriteWidth == 0, "Sheet width must be divisible by sprite width.")
@@ -191,8 +191,8 @@ function Sprite:setQuad(n)
     local w = self.sheetWidth / self.spriteWidth
     local h = self.sheetHeight / self.spriteHeight
 
-    Error.expect(n, "n", "number")
-    Error.bound(n, 1, w * h)
+    err.expect(n, "n", "number")
+    err.bound(n, 1, w * h)
     n = n - 1
 
     local i = n % w
@@ -206,7 +206,7 @@ end
 --- @param name string
 --- @param options? table
 function Sprite:addAnimation(name, options)
-    Error.expect(name, "name", "string")
+    err.expect(name, "name", "string")
     assert(self.animations[name] == nil, "Animation '" .. name .. "' already exists.")
 
     options = options or {}
@@ -224,7 +224,7 @@ function Sprite:setAnimation(name, frame)
     assert(self.animations[name] ~= nil, "Animation '" .. name .. "' does not exist.")
 
     if frame ~= nil then
-        Error.bound(frame, 1, #self.animations[name].frames, "Frame")
+        err.bound(frame, 1, #self.animations[name].frames, "Frame")
     end
 
     self.animation = name
