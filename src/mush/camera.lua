@@ -1,235 +1,152 @@
 --[[
-    mush.camera
-    A simple game camera library for löve.
+    mush.cam
+    A simple game camera for löve with a focus on pixel art.
 --]]
 
 local g = love.graphics
+local m = love.math
 
-<<<<<<< Updated upstream
---- @class camera
---- @field canvas love.Canvas?
---- @field width number
---- @field height number
---- @field scale number
---- @field x number
---- @field y number
---- @field angle number
---- @field zoom number
-local camera = {
-    canvas = nil,
-    width = 0, height = 0,
-    scale = 1,
-
-    x = 0, y = 0,
-    angle = 0,
-    zoom = 1,
-}
-
-local minw, minh = 0, 0
-
---[[ Setup Functions ]]----------------------------------------
---- Initialize camera canvas.
---- Can be chained.
---- @param width number
---- @param height number
-function camera:setup(width, height)
-    minw, minh = width, height
-
-=======
-local mushpath = string.match(..., "^(.-)[^%.]+$")
-local t = require("./types")
+local mush = require("src.mush.types")
+local trans = require("src.util.trans")
 
 --- @class (exact) mush.Camera
---- @field canvas love.Canvas?
---- @field source mush.Rect
+--- @field private canvas love.Canvas?
 --- @field scale number
-local camera = {
-    
-
-    --- Camera canvas. nil until initialized.
-    canvas = nil,
-
-    --- Visible area of 
-    source = {
-        x = 0, y = 0,
-        width = 0, height = 0 },
-
-    --- Scale applied to the final canvas.
-    scale = 1
-}
-
-
---- @field canvas love.Canvas?
---- @field width number
---- @field height number
---- @field scale number
---- @field x number
---- @field y number
---- @field angle number
+--- @field world love.Transform
+--- @field pos mush.Point
+--- @field off mush.Point
+--- @field dir number
 --- @field zoom number
-local camera = {
-    min_width = 0, min_height = 0,
-    
+--- @field min mush.Size
+--- @field size mush.Size
+--- @field dest mush.Size
+local cam = {
+    --- Camera canvas.
     canvas = nil,
-    width = 0, height = 0,
+    --- Canvas scale, applied after each draw. (>= 1)
     scale = 1,
 
-    x = 0, y = 0,
-    angle = 0,
+    --- World transform, updated before each draw.
+    world = m.newTransform(),
+    --- Center of the visible region.
+    pos = mush.Point { 0, 0 },
+    --- Positional offset from cam.pos.
+    off = mush.Point { 0, 0 },
+    --- Rotation of the visible region.
+    dir = 0,
+    --- World scale, applied before each draw.
     zoom = 1,
+
+    --- Minimum size of the visible region.
+    min = mush.Size { 0, 0 },
+    --- Size of the visible region.
+    size = mush.Size { 0, 0 },
+    --- Size of the canvas after scaling.
+    dest = mush.Size { 0, 0 },
 }
 
---[[ Setup Functions ]]----------------------------------------
---- Initialize camera canvas.
---- Can be chained.
+--[[ Setup ]]--------------------------------------------------
+--- Initialize the camera canvas.
 --- @param width number
 --- @param height number
 --- @param scale number?
-function camera:setup(width, height, scale)
-    self.min_width, self.min_height = width, height
-    self.scale = self.scale or 1
-
->>>>>>> Stashed changes
+--- @return mush.Camera
+function cam:init(width, height, scale)
     self.canvas = g.newCanvas(width, height)
-    self.width, self.height = width, height
+    self.scale = scale or 1
+
+    self.pos = mush.Point { 0, 0 }
+    self.off = mush.Point { 0, 0 }
+    self.dir = 0
+    self.zoom = 1
+
+    self.min = mush.Size { width, height }
+    self.size = mush.Size { width, height }
+    self.dest = mush.Size { width * self.scale, height * self.scale }
 
     return self
 end
 
 --- Resize camera canvas to fit within the given dimensions.
---- Can be chained.
 --- @param width number
 --- @param height number
---- @param keep_ratio boolean?
 --- @param keep_int boolean?
-function camera:resize(width, height, keep_ratio, keep_int)
-    self.scale = math.min(
-        width / minw,
-        height / minh
-    )
+--- @param keep_ratio boolean?
+--- @return mush.Camera
+function cam:resize(width, height, keep_int, keep_ratio)
+    self.dest = mush.Size { width, height }
+    self.scale = math.min(width / self.min.width, height / self.min.height)
+    self.scale = math.max(self.scale, 1)
 
-    if not keep_ratio then
-        self.width = math.ceil(width / self.scale)
-        self.height = math.ceil(height / self.scale)
-
-        self.canvas = g.newCanvas(self.width, self.height)
+    if keep_int ~= false then -- treat nil as true
+        self.scale = math.floor(self.scale)
     end
 
-    if keep_int then
-        self.scale = math.floor(self.scale)
+    if not keep_ratio then -- treat nil as false
+        -- based on [alterae's screen manager](https://github.com/alterae/hello-love/blob/main/lib/screen.lua)
+        self.size.width = math.ceil(width / self.scale)
+        self.size.height = math.ceil(height / self.scale)
+
+        -- only need to create newproxy canvas if aspect ratio changes
+        self.canvas = g.newCanvas(self.size.width, self.size.height)
     end
 
     return self
 end
 
---[[ Transform Functions ]]-------------------------------------
-<<<<<<< Updated upstream
---- Apply camera transforms.
---- @param no_pos boolean?
---- @param no_zoom boolean?
---- @param no_center boolean?
-function camera:transform(no_pos, no_zoom, no_center)
-    if not no_center then
-        g.translate(self.width / 2, self.height / 2)
-    end
-
-    if not no_zoom then
-        g.scale(self.zoom)
-    end
-
-=======
---- Apply world transforms.
---- @param no_pos boolean?
---- @param no_zoom boolean?
-function camera:transform(no_pos, no_zoom)
-    if not no_zoom then
-        g.scale(self.zoom)
-    end
-
->>>>>>> Stashed changes
-    -- TODO: add rotation
-
-    if not no_pos then
-        g.translate(-self.x, -self.y)
-    end
-end
-
---- Center the camera on a canvas coordinate.
+--[[ Update ]]-------------------------------------------------
+--- Follow a point in world-space at a fixed distance.
 --- @param x number
 --- @param y number
---- @param w number?
---- @param h number?
-function camera:follow(x, y, w, h)
-    local cutoff, strength = 0.1, 0.07
+--- @param dist number
+--- @param angle number
+function cam:follow(x, y, dist, angle)
+    dist = trans.tween(dist, 0, math.min(self.size.width, self.size.height) * 0.40, trans.func.ease_in)
     
-    w = w or math.min(self.width, self.height) / 2
-    h = h or w
-
-    local dx = x - self.x
-    local dy = y - self.y
-
-    if math.abs(dx) < cutoff then
-        self.x = x
-    elseif dx >  w / 2 then
-        self.x = x - w / 2
-    elseif dx < -w / 2 then
-        self.x = x + w / 2
+    if dist > 0.1 or angle == nil then
+        angle = math.atan2(self.pos.y - y, self.pos.x - x)
     end
 
-    if math.abs(dy) < cutoff then
-        self.y = y
-    elseif dy >  h / 2 then
-        self.y = y - h / 2
-    elseif dy < -h / 2 then
-        self.y = y + h / 2
-    end
-
-    self.x = self.x + (x - self.x) * strength
-    self.y = self.y + (y - self.y) * strength
+    self.pos.x = x + dist * math.cos(angle)
+    self.pos.y = y + dist * math.sin(angle)
 end
 
---[[ Draw Functions ]]-----------------------------------------
---- Start drawing to camera canvas.
-function camera:set()
-<<<<<<< Updated upstream
-    g.setCanvas(self.canvas)
-    g.setColor(1,1,0)
-    g.circle("fill", 0,0, 3)
-end
-
---- Stop drawing to camera canvas.
-function camera:unset()
-    g.setCanvas()
-end
-
---- Draw the camera canvas.
---- @param x number?
---- @param y number?
-function camera:draw(x, y)
-    g.setColor(1, 1, 1, 1)
-    g.draw(self.canvas, x, y, 0, self.scale)
-=======
-    -- preserve graphics state
+--[[ Draw ]]---------------------------------------------------
+--- Start drawing to canvas, must be followed by a cam:unset call.
+function cam:set()
     g.push("all")
 
     g.setCanvas(self.canvas)
-
-    -- center view on origin
-    g.origin()
-    g.translate(self.width / 2, self.height / 2)
+    g.clear()
 end
 
---- Stop drawing to camera canvas. Must follow a :set() call.
-function camera:unset()
-    g.pop()
-    g.push("all")
+--- Apply transforms before drawing world.
+function cam:transform()
+    -- update transform
+    self.world:reset()
+        :translate(
+            math.floor(self.size.width / 2),
+            math.floor(self.size.height / 2)
+        )
+        :scale(self.zoom)
+        :rotate(self.dir)
+        :translate(
+            -math.floor(self.pos.x - self.off.x),
+            -math.floor(self.pos.y - self.off.y)
+        )
+    
+    -- apply transform
+    g.replaceTransform(self.world)
+end
 
-    g.setBlendMode("alpha", "premultiplied")
-    g.draw(self.canvas, x, y, 0, self.scale)
-
+--- Stop drawing to canvas, must follow a cam:set call.
+function cam:unset()
     g.pop()
->>>>>>> Stashed changes
+    g.draw(self.canvas,
+        (self.dest.width - self.size.width * self.scale) / 2,
+        (self.dest.height - self.size.height * self.scale) / 2,
+        0, self.scale)
 end
 
 --[[ Export ]]-------------------------------------------------
-return camera
+return cam

@@ -79,7 +79,7 @@ local trans = require("src.util.trans")
 
 local p = require("src.core.player")
 local terminal = require("src.core.terminal")
-local cam = require("src.mush.camera"):setup(320, 180)
+local cam = require("src.mush.camera"):init(320, 180)
 
 local music = love.audio.newSource("assets/music/bitspace.mp3", "stream")
 music:setLooping(true)
@@ -104,8 +104,8 @@ local function generate_stars(n)
         -- separate the sizes into tables for easy paralaxing
         stars[size][#stars[size] + 1] = {
             brightness = m.random(10) / 10,
-            x = m.random(cam.width),
-            y = m.random(cam.height),
+            x = m.random(cam.size.width),
+            y = m.random(cam.size.height),
         }
     end
 end
@@ -216,8 +216,8 @@ local function generate_debris(sectors, cluster_size)
             debris[sx][sy] = {}
 
             for _ = 1, m.random(2,5) do
-                local cx = (sx - 1) * debris.sector_width + 64 + m.random(debris.sector_width - 128) - (World.width + cam.width) / 2
-                local cy = (sy - 1) * debris.sector_height + 64 + m.random(debris.sector_height - 128) - (World.height + cam.height) / 2
+                local cx = (sx - 1) * debris.sector_width + 64 + m.random(debris.sector_width - 128) - (World.width + cam.size.width) / 2
+                local cy = (sy - 1) * debris.sector_height + 64 + m.random(debris.sector_height - 128) - (World.height + cam.size.height) / 2
 
                 for _ = 1, cluster_size do
                     local ox = m.random(8) * 8
@@ -257,8 +257,8 @@ function love.load()
     p:reset()
     terminal:reset()
 
-    cam.x = 0
-    cam.y = 0
+    cam.pos.x = 0
+    cam.pos.y = 0
 
     -- game intro
     terminal:notify(
@@ -308,8 +308,8 @@ Copyright (C) Optera Inc.]],
     generate_debris(20, 5)
 end
 
-function love.resize(w, h)
-    cam:resize(w, h)
+function love.resize(width, height)
+    cam:resize(width, height, true, false)
     generate_stars(80)
 end
 
@@ -388,13 +388,14 @@ end
 
 local old_canvas_x, old_canvas_y = 0, 0
 local old_my = 0
+local follow_dist = 0
 function love.update(dt)
     if game_started then
         local mx, my = love.mouse.getPosition()
 
         if terminal.open and love.mouse.isDown(1)
-        and mx / cam.scale > math.floor(trans.tween(terminal.open_timer / terminal.Duration, terminal.Width + 10, 0, trans.func.ease)) + cam.width - terminal.Width - 4
-        and mx / cam.scale < cam.width - 5 then
+        and mx / cam.scale > math.floor(trans.tween(terminal.open_timer / terminal.Duration, terminal.Width + 10, 0, trans.func.ease)) + cam.size.width - terminal.Width - 4
+        and mx / cam.scale < cam.size.width - 5 then
             terminal.scroll = trans.clamp(
                 terminal.scroll - (my - old_my),
                 0, terminal.input_y - terminal.Padding)
@@ -506,32 +507,35 @@ function love.update(dt)
 
         p:update(dt)
 
-        p.x = trans.clamp(p.x, -(World.width + cam.width) / 2, (World.width + cam.width) / 2)
-        p.y = trans.clamp(p.y, -(World.height + cam.height) / 2, (World.height + cam.height) / 2)
+        p.x = trans.clamp(p.x, -(World.width + cam.size.width) / 2, (World.width + cam.size.width) / 2)
+        p.y = trans.clamp(p.y, -(World.height + cam.size.height) / 2, (World.height + cam.size.height) / 2)
 
-        local dx = old_canvas_x - (cam.x + cam.width / 2) - 0.05 * math.sin(p.heading)
-        local dy = old_canvas_y - (cam.y + cam.height / 2) + 0.05 * math.cos(p.heading)
+        local dx = old_canvas_x - (cam.pos.x + cam.size.width / 2) - 0.05 * math.sin(p.heading)
+        local dy = old_canvas_y - (cam.pos.y + cam.size.height / 2) + 0.05 * math.cos(p.heading)
 
-        old_canvas_x = cam.x + cam.width / 2
-        old_canvas_y = cam.y + cam.height / 2
+        old_canvas_x = cam.pos.x + cam.size.width / 2
+        old_canvas_y = cam.pos.y + cam.size.height / 2
 
         for size, layer in ipairs(stars) do
-            layer.ox = (layer.ox + dx / (3 - size / #stars)) % cam.width
-            layer.oy = (layer.oy + dy / (3 - size / #stars)) % cam.height
+            layer.ox = (layer.ox + dx / (3 - size / #stars)) % cam.size.width
+            layer.oy = (layer.oy + dy / (3 - size / #stars)) % cam.size.height
         end
 
-        local follow_dist = trans.tween(terminal.open_timer / terminal.Duration, 50, 20, trans.func.ease)
-        cam:follow(p.x, p.y, follow_dist)
-
-        cam.ox = trans.tween(terminal.open_timer / terminal.Duration, 0, (terminal.Width + 10) / 2, trans.func.ease)
+        if p.vel > 0 then 
+            follow_dist = p.vel / p.MaxVelocity
+        else
+            follow_dist = math.max(0, follow_dist - dt)
+        end
         
+        cam:follow(p.x, p.y, follow_dist, p.heading + math.pi/2)
+
         menu_transition = math.max(menu_transition - dt, 0.0)
     elseif menu_transition == 1.0 then
         game_started = true
     else
         for size, layer in ipairs(stars) do
-            layer.ox = (layer.ox - 2 / (3 - size / #stars)) % cam.width
-            layer.oy = (layer.oy + 1 / (3 - size / #stars)) % cam.height
+            layer.ox = (layer.ox - 2 / (3 - size / #stars)) % cam.size.width
+            layer.oy = (layer.oy + 1 / (3 - size / #stars)) % cam.size.height
         end
 
         if press_any_button then
@@ -543,19 +547,19 @@ function love.update(dt)
 end
 
 g.setBackgroundColor(Color.BG)
-function love.draw()
+function love.draw()    
+    g.setColor(1.00, 1.00, 1.00, 1.00)
+
     cam:set()
-    g.clear(Color.BG)
 
     -- draw stars
     for size, layer in ipairs(stars) do
         for _, star in ipairs(layer) do
             g.setColor(1,1,0.5*star.brightness + 0.5, star.brightness)
-            g.circle("fill", math.floor(star.x + layer.ox) % (cam.width), math.floor(star.y + layer.oy) % (cam.height), size)
+            g.circle("fill", math.floor(star.x + layer.ox) % (cam.size.width), math.floor(star.y + layer.oy) % (cam.size.height), size)
         end
     end
 
-    g.push()
     cam:transform()
 
     -- draw game
@@ -590,6 +594,7 @@ function love.draw()
                 g.setColor(Color.StationDefault)
             end
 
+            g.setFont(Font.Terminal)
             g.print(label, station.x - Font.Terminal:getWidth(label)/2, station.y - station.type.size/2 - Font.Terminal:getHeight() - 5)
             love.graphics.draw(station.type.image, station.x, station.y, station.r + World.stations.r, 1, 1, station.type.size/2, station.type.size/2)
         end
@@ -606,28 +611,25 @@ function love.draw()
         p:draw()
     end
 
-    g.pop()
+    g.origin()
 
     -- draw terminal
     if game_started then
-        terminal:draw(cam.width, cam.height)
+        terminal:draw(cam.size.width, cam.size.height)
     -- draw title stuff
     else
         g.setColor(1,1,1, 1)
-        g.draw(menu_image, (cam.height - 200) / 2, 8 * math.sin(Timer) + 8)
-        g.draw(menu_title, (cam.width - 300) / 2)
-
+        g.draw(menu_title, cam.size.width / 2 - 150, 0)
+        g.draw(menu_image, cam.size.width / 2 - 170, cam.size.height / 2 - 82 + 8 * math.sin(Timer))
+        
         g.setFont(Font.Terminal)
-        g.print("[Press any key to continue]", cam.width - Font.Terminal:getWidth("[Press any key to continue]") - 5, cam.height - Font.Terminal:getHeight() - 5)
+        g.print("[Press any key to continue]", cam.size.width - Font.Terminal:getWidth("[Press any key to continue]") - 5, cam.size.height - Font.Terminal:getHeight() - 5)
     end
 
     cam:unset()
 
-    local w, h = g.getDimensions()
-    cam:draw((w - cam.width * cam.scale) / 2, (h - cam.height * cam.scale) / 2)
-
     g.setColor(Color.BG[1], Color.BG[2], Color.BG[3], menu_transition)
-    g.rectangle("fill", 0, 0, cam.width * cam.scale, cam.height * cam.scale)
+    g.rectangle("fill", 0, 0, cam.dest.width, cam.dest.height)
 end
 
 love.resize(g.getDimensions())
