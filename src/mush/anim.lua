@@ -253,8 +253,8 @@ end
 function Sprite:draw(x, y)
     g.setColor(self.settings.color)
     g.draw(self.image, self.quad,
-        math.floor((x or 0) + self.settings.ox),
-        math.floor((y or 0) + self.settings.oy),
+        math.floor(x),
+        math.floor(y),
         self.r + self.settings.r,
         self.sx * self.settings.sx,
         self.sy * self.settings.sy,
