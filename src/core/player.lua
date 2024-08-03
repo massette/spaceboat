@@ -7,7 +7,7 @@ local anim = require("src.mush.anim")
 -- optional upgrades: navigation (route)
 local player = {
     Thrust = 100,
-    MaxVelocity = 500,
+    MaxVelocity = 150,
 
     image = anim.Sprite.new { "assets/images/objects/boat.png", 32 }
         :addAnimation("idle")

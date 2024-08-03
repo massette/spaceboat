@@ -10,38 +10,28 @@ local mush = require("src.mush.types")
 local trans = require("src.util.trans")
 
 --- @class (exact) mush.Camera
---- @field private canvas love.Canvas?
---- @field scale number
---- @field world love.Transform
---- @field pos mush.Point
---- @field off mush.Point
---- @field dir number
---- @field zoom number
---- @field min mush.Size
---- @field size mush.Size
---- @field dest mush.Size
+--- @field private canvas love.Canvas? @ Camera canvas.
+--- @field scale number                @ Canvas scale, applied after each draw. (>= 1)
+--- @field world love.Transform        @ World transform, updated before each draw.
+--- @field pos mush.Point              @ Center of the visible region.
+--- @field off mush.Point              @ Positional offset from cam.pos.
+--- @field dir number                  @ Rotation of the visible region.
+--- @field zoom number                 @ World scale, applied before each draw.
+--- @field min mush.Size               @ Minimum size of the visible region.
+--- @field size mush.Size              @ Size of the visible region.
+--- @field dest mush.Size              @ Size of the canvas after scaling.
 local cam = {
-    --- Camera canvas.
     canvas = nil,
-    --- Canvas scale, applied after each draw. (>= 1)
     scale = 1,
 
-    --- World transform, updated before each draw.
     world = m.newTransform(),
-    --- Center of the visible region.
     pos = mush.Point { 0, 0 },
-    --- Positional offset from cam.pos.
     off = mush.Point { 0, 0 },
-    --- Rotation of the visible region.
     dir = 0,
-    --- World scale, applied before each draw.
     zoom = 1,
 
-    --- Minimum size of the visible region.
     min = mush.Size { 0, 0 },
-    --- Size of the visible region.
     size = mush.Size { 0, 0 },
-    --- Size of the canvas after scaling.
     dest = mush.Size { 0, 0 },
 }
 
@@ -95,20 +85,24 @@ function cam:resize(width, height, keep_int, keep_ratio)
 end
 
 --[[ Update ]]-------------------------------------------------
+local follow_dist = 0
+
 --- Follow a point in world-space at a fixed distance.
 --- @param x number
 --- @param y number
---- @param dist number
---- @param angle number
-function cam:follow(x, y, dist, angle)
-    dist = trans.tween(dist, 0, math.min(self.size.width, self.size.height) * 0.40, trans.func.ease_in)
-    
-    if dist > 0.1 or angle == nil then
-        angle = math.atan2(self.pos.y - y, self.pos.x - x)
+--- @param d number
+function cam:follow(x, y, d)
+    -- TODO: fix jittering
+
+    local dir = math.atan2(self.pos.y - y, self.pos.x - x)
+
+    if d ~= 1.00 then
+        local dist = math.sqrt( (self.pos.x - x)^2 + (self.pos.y - y)^2 )
+        follow_dist = 0.98 * dist
     end
 
-    self.pos.x = x + dist * math.cos(angle)
-    self.pos.y = y + dist * math.sin(angle)
+    self.pos.x = x + follow_dist * math.cos(dir)
+    self.pos.y = y + follow_dist * math.sin(dir)
 end
 
 --[[ Draw ]]---------------------------------------------------
@@ -142,10 +136,18 @@ end
 --- Stop drawing to canvas, must follow a cam:set call.
 function cam:unset()
     g.pop()
+
+    g.push("all")
+    g.setColor(1, 1, 1, 1)
+    g.setBlendMode("alpha", "premultiplied")
+
+    -- TODO: smooth camera movement
     g.draw(self.canvas,
         (self.dest.width - self.size.width * self.scale) / 2,
         (self.dest.height - self.size.height * self.scale) / 2,
         0, self.scale)
+    
+    g.pop()
 end
 
 --[[ Export ]]-------------------------------------------------

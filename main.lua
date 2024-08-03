@@ -79,6 +79,7 @@ local trans = require("src.util.trans")
 
 local p = require("src.core.player")
 local terminal = require("src.core.terminal")
+local stars = require("src.core.stars")
 local cam = require("src.mush.camera"):init(320, 180)
 
 local music = love.audio.newSource("assets/music/bitspace.mp3", "stream")
@@ -90,25 +91,6 @@ local menu_title = g.newImage("assets/images/system/title.png")
 local menu_image = g.newImage("assets/images/system/title_boat.png")
 local menu_transition = 0
 local press_any_button = false
-
---- @type table[]
--- star field code based loosely on this forum post: https://love2d.org/forums/viewtopic.php?t=73637
-local stars = {}
-local function generate_stars(n)
-    stars[1] = { ox = 0, oy = 0 }
-    stars[2] = { ox = 0, oy = 0 }
-
-    for i = 1, n do
-        local size = m.random(#stars)
-
-        -- separate the sizes into tables for easy paralaxing
-        stars[size][#stars[size] + 1] = {
-            brightness = m.random(10) / 10,
-            x = m.random(cam.size.width),
-            y = m.random(cam.size.height),
-        }
-    end
-end
 
 local function generate_stations(n)
     World.stations = {
@@ -303,14 +285,14 @@ Copyright (C) Optera Inc.]],
         ""
     )
 
-    generate_stars(80)
+    stars:generate(cam.size.width, cam.size.height)
     generate_stations(12)
     generate_debris(20, 5)
 end
 
 function love.resize(width, height)
     cam:resize(width, height, true, false)
-    generate_stars(80)
+    stars:generate(cam.size.width, cam.size.height)
 end
 
 function love.textinput(t)
@@ -386,7 +368,6 @@ function love.wheelmoved(sx, sy)
     end
 end
 
-local old_canvas_x, old_canvas_y = 0, 0
 local old_my = 0
 local follow_dist = 0
 function love.update(dt)
@@ -510,33 +491,14 @@ function love.update(dt)
         p.x = trans.clamp(p.x, -(World.width + cam.size.width) / 2, (World.width + cam.size.width) / 2)
         p.y = trans.clamp(p.y, -(World.height + cam.size.height) / 2, (World.height + cam.size.height) / 2)
 
-        local dx = old_canvas_x - (cam.pos.x + cam.size.width / 2) - 0.05 * math.sin(p.heading)
-        local dy = old_canvas_y - (cam.pos.y + cam.size.height / 2) + 0.05 * math.cos(p.heading)
-
-        old_canvas_x = cam.pos.x + cam.size.width / 2
-        old_canvas_y = cam.pos.y + cam.size.height / 2
-
-        for size, layer in ipairs(stars) do
-            layer.ox = (layer.ox + dx / (3 - size / #stars)) % cam.size.width
-            layer.oy = (layer.oy + dy / (3 - size / #stars)) % cam.size.height
-        end
-
-        if p.vel > 0 then 
-            follow_dist = p.vel / p.MaxVelocity
-        else
-            follow_dist = math.max(0, follow_dist - dt)
-        end
-        
-        cam:follow(p.x, p.y, follow_dist, p.heading + math.pi/2)
+        cam:follow(p.x, p.y, (p.vel / p.MaxVelocity * terminal.vars["thrust"].value))
 
         menu_transition = math.max(menu_transition - dt, 0.0)
     elseif menu_transition == 1.0 then
         game_started = true
     else
-        for size, layer in ipairs(stars) do
-            layer.ox = (layer.ox - 2 / (3 - size / #stars)) % cam.size.width
-            layer.oy = (layer.oy + 1 / (3 - size / #stars)) % cam.size.height
-        end
+        cam.pos.x = 32 * Timer
+        cam.pos.y = -18 * Timer
 
         if press_any_button then
             menu_transition = math.min(menu_transition + dt, 1.0)
@@ -551,16 +513,10 @@ function love.draw()
     g.setColor(1.00, 1.00, 1.00, 1.00)
 
     cam:set()
+    cam:transform()
 
     -- draw stars
-    for size, layer in ipairs(stars) do
-        for _, star in ipairs(layer) do
-            g.setColor(1,1,0.5*star.brightness + 0.5, star.brightness)
-            g.circle("fill", math.floor(star.x + layer.ox) % (cam.size.width), math.floor(star.y + layer.oy) % (cam.size.height), size)
-        end
-    end
-
-    cam:transform()
+    stars:draw(cam.pos.x, cam.pos.y)
 
     -- draw game
     if game_started then
